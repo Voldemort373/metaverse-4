@@ -4,29 +4,53 @@
 // When running the script with `npx hardhat run <script>` you'll find the Hardhat
 // Runtime Environment's members available in the global scope.
 const hre = require("hardhat");
+const fs = require('fs');
 
 async function main() {
-  // Hardhat always runs the compile task when running scripts with its command
-  // line interface.
-  //
-  // If this script is run directly using `node` you may want to call compile
-  // manually to make sure everything is compiled
-  // await hre.run('compile');
 
-  // We get the contract to deploy
-  const Greeter = await hre.ethers.getContractFactory("Greeter");
-  const greeter = await Greeter.deploy("Hello, Hardhat!");
+  const [owner, userA] = await hre.ethers.getSigners()
 
-  await greeter.deployed();
+  const NAME = "MJ Building"
+  const SYMBOL = "MJB"
+  const COST = hre.ethers.utils.parseEther('1')
+  const MAX_SUPPLY = 5
+  const TOTAL_SUPPLY = 0
 
-  console.log("Greeter deployed to:", greeter.address);
+  const landContractFactory = await hre.ethers.getContractFactory("Land");
+  const contract = await landContractFactory.deploy(NAME, SYMBOL, COST, MAX_SUPPLY, TOTAL_SUPPLY);
+
+  await contract.deployed();
+
+
+  // ----------------------------------
+  console.log("Contract deployed to:", contract.address);
+  console.log("Contract deployed by: ", owner.address);
+  saveFrontendFiles(contract.address);
+
 }
 
-// We recommend this pattern to be able to use async/await everywhere
-// and properly handle errors.
+async function saveFrontendFiles(tokenAddr) {
+  const contractsDir = __dirname + "/../app/src/build/contracts";
+
+  if (!fs.existsSync(contractsDir)) {
+    fs.mkdirSync(contractsDir);
+  }
+
+  fs.writeFileSync(
+    contractsDir + "/contract-address.json",
+    JSON.stringify(
+      {
+        ContractAddress: tokenAddr
+      }
+    )
+  );
+
+}
+
 main()
   .then(() => process.exit(0))
   .catch((error) => {
     console.error(error);
     process.exit(1);
   });
+
